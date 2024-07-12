@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator } from 'react-native';
 
-// Define constants
 const PHONE_NUMBER_LENGTH = 10;
-
-// Utility function for validation
 const validate = ({ name, email, phone }) => {
   const errors = {};
 
