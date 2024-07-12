@@ -1,60 +1,62 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator } from 'react-native';
+
+// Define constants
+const PHONE_NUMBER_LENGTH = 10;
+
+// Utility function for validation
+const validate = ({ name, email, phone }) => {
+  const errors = {};
+
+  if (!name.trim()) {
+    errors.name = 'Name is required';
+  }
+
+  if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
+    errors.email = 'Enter a valid email address';
+  }
+
+  if (!phone.trim() || phone.trim().length !== PHONE_NUMBER_LENGTH) {
+    errors.phone = `Phone number must be ${PHONE_NUMBER_LENGTH} digits`;
+  }
+
+  return errors;
+};
 
 const FormExample = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(null);
 
-  const validate = () => {
-    let isValid = true;
-
-    if (!name.trim()) {
-      setNameError('Name is required');
-      isValid = false;
-    } else {
-      setNameError('');
+  const handleSubmit = async () => {
+    const validationErrors = validate({ name, email, phone });
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
     }
 
-    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
-      setEmailError('Enter a valid email address');
-      isValid = false;
-    } else {
-      setEmailError('');
-    }
-
-    if (!phone.trim() || phone.trim().length !== 10) {
-      setPhoneError('Phone number must be 10 digits');
-      isValid = false;
-    } else {
-      setPhoneError('');
-    }
-
-    return isValid;
-  };
-
-  const handleSubmit = () => {
-    if (validate()) {
-      const formData = { name, email, phone };
-      fetch('https://example.com/api/form-submit', {
+    setLoading(true);
+    setErrors({});
+    try {
+      const response = await fetch('https://example.com/api/form-submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('Success:', data);
-          // Handle success actions
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          // Handle error actions
-        });
+        body: JSON.stringify({ name, email, phone }),
+      });
+      const data = await response.json();
+      setLoading(false);
+      setSuccess('Form submitted successfully!');
+      console.log('Success:', data);
+    } catch (error) {
+      setLoading(false);
+      setSuccess(null);
+      setErrors({ api: 'An error occurred while submitting the form' });
+      console.error('Error:', error);
     }
   };
 
@@ -63,34 +65,39 @@ const FormExample = () => {
       <TextInput
         style={styles.input}
         value={name}
-        onChangeText={(text) => setName(text)}
+        onChangeText={setName}
         placeholder="Enter your name"
       />
-      {nameError ? <Text style={styles.error}>{nameError}</Text> : null}
+      {errors.name && <Text style={styles.error}>{errors.name}</Text>}
 
       <TextInput
         style={styles.input}
         value={email}
-        onChangeText={(text) => setEmail(text)}
+        onChangeText={setEmail}
         placeholder="Enter your email"
         keyboardType="email-address"
         autoCapitalize="none"
       />
-      {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
+      {errors.email && <Text style={styles.error}>{errors.email}</Text>}
 
       <TextInput
         style={styles.input}
         value={phone}
-        onChangeText={(text) => setPhone(text)}
+        onChangeText={setPhone}
         placeholder="Enter your phone number"
         keyboardType="phone-pad"
       />
-      {phoneError ? <Text style={styles.error}>{phoneError}</Text> : null}
+      {errors.phone && <Text style={styles.error}>{errors.phone}</Text>}
 
-      <Button
-        title="Submit"
-        onPress={handleSubmit}
-      />
+      {errors.api && <Text style={styles.error}>{errors.api}</Text>}
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <Button title="Submit" onPress={handleSubmit} />
+      )}
+
+      {success && <Text style={styles.success}>{success}</Text>}
     </View>
   );
 };
@@ -113,6 +120,10 @@ const styles = StyleSheet.create({
   error: {
     color: 'red',
     marginBottom: 10,
+  },
+  success: {
+    color: 'green',
+    marginTop: 10,
   },
 });
 
